@@ -3,7 +3,7 @@ from torchvision import models
 
 
 def make_model(
-    model_name="resnet18",
+    model_name="resnet34",
     num_classes=85,
     pretrained=True
 ):
@@ -11,7 +11,7 @@ def make_model(
     Create a torchvision ResNet model.
 
     Args:
-        model_name: resnet18, resnet34, resnet50, ...
+        model_name: resnet18, resnet34, resnet50, resnet101 or resnet152. Default resnet34.
         num_classes: number of output classes. Default 85.
         pretrained: whether to use ImageNet pretrained weights. Default True
     """
