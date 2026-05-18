@@ -13,6 +13,8 @@ def make_dataloaders_from_dir(data_dir, batch_size=32, image_size=224, val_split
         transforms.ToTensor(),
     ])
 
+    kjskdskjsdkjjhjhj
+
     full_dataset = datasets.ImageFolder(data_dir, transform=train_transform)
 
     val_size = int(len(full_dataset) * val_split)
