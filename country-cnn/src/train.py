@@ -19,7 +19,7 @@ def run_epoch(model, dataloader, optimizer, criterion, device, train=True):
     running_corrects = 0
     running_corrects_top5 = 0
 
-    if device == "cuda":
+    if device.type == "cuda":
         scaler = torch.cuda.amp.GradScaler() # For mixed precision training
 
     for batch_idx, (images, labels) in enumerate(tqdm(dataloader, desc=f"Description")):
@@ -28,17 +28,17 @@ def run_epoch(model, dataloader, optimizer, criterion, device, train=True):
         labels = labels.to(device)  
 
         if train:
-            optimizer.zero_grad()   # Reset gradients.
+            optimizer.zero_grad()   # Reset gradients. 
         
         with torch.set_grad_enabled(train):     # Compute gradients if training
-            if device == "cuda":
+            if device.type == "cuda":
                 with torch.cuda.amp.autocast(): # For mixed precision training
                     predictions = model(images)
                     loss = criterion(predictions, labels)
-                    if train:
-                        scaler.scale(loss).backward()
-                        scaler.step(optimizer)
-                        scaler.update()
+                if train:
+                    scaler.scale(loss).backward()
+                    scaler.step(optimizer)
+                    scaler.update()
             else:
                 predictions = model(images)
                 loss = criterion(predictions, labels)
