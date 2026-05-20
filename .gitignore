@@ -41,6 +41,6 @@ models/*.pkl
 
 # Data (optional - if not version controlled)
 data/
-*.csv
+#*.csv
 outputs/plots/*
 outputs/models/*
