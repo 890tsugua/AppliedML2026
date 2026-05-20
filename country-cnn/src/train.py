@@ -3,6 +3,7 @@ from torch.utils.data import DataLoader, random_split
 import matplotlib.pyplot as plt
 import torch
 from tqdm import tqdm
+from pathlib import Path
 
 def run_epoch(model, dataloader, optimizer, criterion, device, train=True):
     """
@@ -50,7 +51,7 @@ def run_epoch(model, dataloader, optimizer, criterion, device, train=True):
     return epoch_loss, epoch_acc, epoch_acc_top5
 
 
-def train(model, train_loader, val_loader, device, optimizer=None, criterion=None, num_epochs=100):
+def train(model, train_loader, val_loader, device, save_name, optimizer=None, criterion=None, num_epochs=100):
     """
     
     """
@@ -69,9 +70,21 @@ def train(model, train_loader, val_loader, device, optimizer=None, criterion=Non
     if criterion == None:
         criterion = torch.nn.CrossEntropyLoss()
 
+    best_val_loss = float("inf")
+    model_dir = Path("../outputs/models")
+    model_dir.mkdir(parents=True, exist_ok=True)
+
     for epoch in range(num_epochs):
         train_loss, train_accuracy, train_accuracy_top5 = run_epoch(model, train_loader, optimizer, criterion, device, train=True)
         val_loss, val_accuracy, val_accuracy_top5 = run_epoch(model, val_loader, optimizer, criterion, device, train=False)
+
+        # Save model if validation loss improved
+        if val_loss < best_val_loss:
+            best_val_loss = val_loss
+            best_model_path = model_dir / f"{save_name}.pt"
+            torch.save(
+                model.state_dict(), best_model_path)
+            print("Saved best model")
 
         history["train_loss"].append(train_loss)
         history["val_loss"].append(val_loss)
