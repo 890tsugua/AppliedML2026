@@ -31,15 +31,18 @@ def run_epoch(model, dataloader, optimizer, criterion, device, train=True):
             loss = criterion(predictions, labels)
 
             if train:
-                loss.backward()
+                loss.backward()     # Backpropagate loss
                 optimizer.step()
 
+        # Update running loss and accuracy
         running_loss += loss.item() * images.size(0)
         _, best_pred = torch.max(predictions, 1) # Returns index of max prediction (models best prediction)
-        _, top_5_preds = torch.topk(predictions, 5, dim=1)
+        k = min(5, predictions.shape[1]) # In case there are less than 5 classes, adjust k accordingly
+        _, top_5_preds = torch.topk(predictions, k, dim=1)
         running_corrects += torch.sum(best_pred == labels.data)
         running_corrects_top5 += (top_5_preds == labels.unsqueeze(1)).any(dim=1).sum()
 
+    # Calculate epoch loss and accuracy
     epoch_loss = running_loss / len(dataloader.dataset)
     epoch_acc = running_corrects.double() / len(dataloader.dataset)
     epoch_acc_top5 = running_corrects_top5.double() / len(dataloader.dataset)
@@ -51,8 +54,14 @@ def train(model, train_loader, val_loader, device, optimizer=None, criterion=Non
     """
     
     """
-    train_losses = []
-    val_losses = []
+    history = {
+        "train_loss": [],
+        "val_loss": [],
+        "train_acc": [],
+        "val_acc": [],
+        "train_acc_top5": [],
+        "val_acc_top5": [],
+    }
 
     if optimizer == None:
         optimizer = torch.optim.Adam(model.parameters(), lr=1e-4)
@@ -61,11 +70,20 @@ def train(model, train_loader, val_loader, device, optimizer=None, criterion=Non
         criterion = torch.nn.CrossEntropyLoss()
 
     for epoch in range(num_epochs):
-        train_loss, train_accuracy = run_epoch(model, train_loader, optimizer, criterion, device, train=True)
-        val_loss, val_accuracy = run_epoch(model, val_loader, optimizer, criterion, device, train=False)
+        train_loss, train_accuracy, train_accuracy_top5 = run_epoch(model, train_loader, optimizer, criterion, device, train=True)
+        val_loss, val_accuracy, val_accuracy_top5 = run_epoch(model, val_loader, optimizer, criterion, device, train=False)
 
-        train_losses.append(train_loss)     # Append losses for plotting training history
-        val_losses.append(val_loss)
+        history["train_loss"].append(train_loss)
+        history["val_loss"].append(val_loss)
+        history["train_acc"].append(train_accuracy.item())
+        history["val_acc"].append(val_accuracy.item())
+        history["train_acc_top5"].append(train_accuracy_top5.item())
+        history["val_acc_top5"].append(val_accuracy_top5.item())
 
-    
-    return train_losses, val_losses
+        print(
+            f"Epoch {epoch+1}/{num_epochs} | "
+            f"Train loss: {train_loss:.4f}, acc: {train_accuracy:.4f}, top5: {train_accuracy_top5:.4f} | "
+            f"Val loss: {val_loss:.4f}, acc: {val_accuracy:.4f}, top5: {val_accuracy_top5:.4f}"
+        )
+
+    return history
