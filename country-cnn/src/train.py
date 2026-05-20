@@ -19,6 +19,9 @@ def run_epoch(model, dataloader, optimizer, criterion, device, train=True):
     running_corrects = 0
     running_corrects_top5 = 0
 
+    if device == "cuda":
+        scaler = torch.cuda.amp.GradScaler() # For mixed precision training
+
     for batch_idx, (images, labels) in enumerate(tqdm(dataloader, desc=f"Description")):
         # Move to cuda or relevant device. 
         images = images.to(device)
@@ -28,12 +31,20 @@ def run_epoch(model, dataloader, optimizer, criterion, device, train=True):
             optimizer.zero_grad()   # Reset gradients.
         
         with torch.set_grad_enabled(train):     # Compute gradients if training
-            predictions = model(images)
-            loss = criterion(predictions, labels)
-
-            if train:
-                loss.backward()     # Backpropagate loss
-                optimizer.step()
+            if device == "cuda":
+                with torch.cuda.amp.autocast(): # For mixed precision training
+                    predictions = model(images)
+                    loss = criterion(predictions, labels)
+                    if train:
+                        scaler.scale(loss).backward()
+                        scaler.step(optimizer)
+                        scaler.update()
+            else:
+                predictions = model(images)
+                loss = criterion(predictions, labels)
+                if train:
+                    loss.backward()     # Backpropagate loss
+                    optimizer.step()
 
         # Update running loss and accuracy
         running_loss += loss.item() * images.size(0)
@@ -53,7 +64,7 @@ def run_epoch(model, dataloader, optimizer, criterion, device, train=True):
 
 def train(model, train_loader, val_loader, device, save_name, optimizer=None, criterion=None, num_epochs=100):
     """
-    
+    Could also add learning rate scheduler, early stopping, saving optimizer.state_dict()
     """
     history = {
         "train_loss": [],
