@@ -32,6 +32,17 @@ def make_dataloaders_from_dir(data_dir, batch_size=32, image_size=224, val_split
 
     return train_loader, val_loader
 
+def make_test_dataloader_from_dir(data_dir, batch_size=32, image_size=224):
+    test_transform = transforms.Compose([
+        transforms.Resize((image_size, image_size)),
+        transforms.ToTensor(),
+    ])
+
+    test_dataset = datasets.ImageFolder(data_dir, transform=test_transform)
+    test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False, num_workers=4, pin_memory=True)
+
+    return test_loader
+
 
 def show_image(image, label=None, prediction=None, class_names=None):
     """
