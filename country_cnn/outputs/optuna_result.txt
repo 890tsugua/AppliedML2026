@@ -1,0 +1,5 @@
+Best value: 3.7031984876452153
+
+Best parameters:
+lr: 0.001916445324514403
+weight_decay: 9.256459432630416e-06
