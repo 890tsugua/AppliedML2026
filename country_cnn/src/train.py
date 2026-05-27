@@ -24,8 +24,8 @@ def run_epoch(model, dataloader, optimizer, criterion, device, train=True):
 
     for batch_idx, (images, labels) in enumerate(tqdm(dataloader, desc=f"Description")):
         # Move to cuda or relevant device. 
-        images = images.to(device)
-        labels = labels.to(device)  
+        images = images.to(device, non_blocking=True)
+        labels = labels.to(device, non_blocking=True)
 
         if train:
             optimizer.zero_grad()   # Reset gradients. 
