@@ -73,10 +73,17 @@ def train(model, train_loader, val_loader, device, save_name, optimizer=None, cr
         "val_acc": [],
         "train_acc_top5": [],
         "val_acc_top5": [],
+        "learning_rate": []
     }
 
     if optimizer == None:
         optimizer = torch.optim.Adam(model.parameters(), lr=1e-4)
+    
+    scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
+        optimizer,
+        T_max=num_epochs,
+        eta_min=1e-6
+    )
 
     if criterion == None:
         criterion = torch.nn.CrossEntropyLoss()
@@ -88,6 +95,8 @@ def train(model, train_loader, val_loader, device, save_name, optimizer=None, cr
     for epoch in range(num_epochs):
         train_loss, train_accuracy, train_accuracy_top5 = run_epoch(model, train_loader, optimizer, criterion, device, train=True)
         val_loss, val_accuracy, val_accuracy_top5 = run_epoch(model, val_loader, optimizer, criterion, device, train=False)
+        scheduler.step() # Step the learning rate scheduler
+        
 
         # Save model if validation loss improved
         if val_loss < best_val_loss:
@@ -103,6 +112,7 @@ def train(model, train_loader, val_loader, device, save_name, optimizer=None, cr
         history["val_acc"].append(val_accuracy.item())
         history["train_acc_top5"].append(train_accuracy_top5.item())
         history["val_acc_top5"].append(val_accuracy_top5.item())
+        history["learning_rate"].append(optimizer.param_groups[0]['lr'])
 
         print(
             f"Epoch {epoch+1}/{num_epochs} | "
