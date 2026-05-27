@@ -89,7 +89,7 @@ def train(model, train_loader, val_loader, device, save_name, save_checkpoints, 
         criterion = torch.nn.CrossEntropyLoss()
 
     best_val_loss = float("inf")
-    model_dir = Path("../outputs/models")
+    model_dir = Path("country_cnn/outputs/models")
     model_dir.mkdir(parents=True, exist_ok=True)
 
     for epoch in range(num_epochs):
