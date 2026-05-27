@@ -7,9 +7,28 @@ import torch
 def make_dataloaders_from_dir(data_dir, batch_size=32, image_size=224, val_split=0.2):
     
     train_transform = transforms.Compose([
-        transforms.Resize((image_size, image_size)), #changes training images to smaller sizes,
-        transforms.RandomHorizontalFlip(),           #applies random horizontal flip for data augmentation during training
-        transforms.ToTensor(),                       #converts images to PyTorch tensors for training
+        transforms.RandomResizedCrop(
+            image_size,
+            scale=(0.7, 1.0),
+            ratio=(0.75, 1.33)
+        ),
+        transforms.RandomHorizontalFlip(),
+
+        transforms.ColorJitter(
+            brightness=0.2,
+            contrast=0.2,
+            saturation=0.2,
+            hue=0.05
+        ),
+
+        transforms.RandomRotation(5),
+
+        transforms.ToTensor(),
+
+        transforms.Normalize(
+            mean=[0.485, 0.456, 0.406],
+            std=[0.229, 0.224, 0.225]
+        ),
     ])
 
     val_transform = transforms.Compose([
