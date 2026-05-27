@@ -62,7 +62,7 @@ def run_epoch(model, dataloader, optimizer, criterion, device, train=True):
     return epoch_loss, epoch_acc, epoch_acc_top5
 
 
-def train(model, train_loader, val_loader, device, save_name, optimizer=None, criterion=None, num_epochs=100):
+def train(model, train_loader, val_loader, device, save_name, save_checkpoints, optimizer=None, criterion=None, num_epochs=100):
     """
     Could also add learning rate scheduler, early stopping, saving optimizer.state_dict()
     """
@@ -99,12 +99,13 @@ def train(model, train_loader, val_loader, device, save_name, optimizer=None, cr
         
 
         # Save model if validation loss improved
-        if val_loss < best_val_loss:
-            best_val_loss = val_loss
-            best_model_path = model_dir / f"{save_name}.pt"
-            torch.save(
-                model.state_dict(), best_model_path)
-            print("Saved best model")
+        if save_checkpoints:
+            if val_loss < best_val_loss:
+                best_val_loss = val_loss
+                best_model_path = model_dir / f"{save_name}.pt"
+                torch.save(
+                    model.state_dict(), best_model_path)
+                print("Saved best model")
 
         history["train_loss"].append(train_loss)
         history["val_loss"].append(val_loss)
