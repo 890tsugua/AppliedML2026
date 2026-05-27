@@ -34,6 +34,10 @@ def make_dataloaders_from_dir(data_dir, batch_size=32, image_size=224, val_split
     val_transform = transforms.Compose([
         transforms.Resize((image_size, image_size)), #changes validation images to smaller sizes
         transforms.ToTensor(),
+        transforms.Normalize(
+            mean=[0.485, 0.456, 0.406],
+            std=[0.229, 0.224, 0.225]
+        ),
     ])
 
     full_dataset = datasets.ImageFolder(data_dir, transform=train_transform) #For every folder the folder name is the label, combines all the folders to one dataset
@@ -46,8 +50,8 @@ def make_dataloaders_from_dir(data_dir, batch_size=32, image_size=224, val_split
     # important: validation should use val_transform, not augmentation
     val_dataset.dataset = datasets.ImageFolder(data_dir, transform=val_transform)
 
-    train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, num_workers=4)
-    val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False, num_workers=4)
+    train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, num_workers=4, pin_memory=True, prefetch_factor=2)
+    val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False, num_workers=4, pin_memory=True, prefetch_factor=2)
 
     return train_loader, val_loader
 
@@ -55,10 +59,14 @@ def make_test_dataloader_from_dir(data_dir, batch_size=32, image_size=224):
     test_transform = transforms.Compose([
         transforms.Resize((image_size, image_size)),
         transforms.ToTensor(),
+        transforms.Normalize(
+            mean=[0.485, 0.456, 0.406],
+            std=[0.229, 0.224, 0.225]
+        )
     ])
 
     test_dataset = datasets.ImageFolder(data_dir, transform=test_transform)
-    test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False, num_workers=4, pin_memory=True)
+    test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False, num_workers=4, pin_memory=True, prefetch_factor=2)
 
     return test_loader
 
