@@ -8,28 +8,35 @@ def make_dataloaders_from_dir(data_dir, batch_size=32, image_size=224, val_split
                               num_workers=8, 
                               pin_memory=True, 
                               prefetch_factor=4,
-                              persistent_workers=True):
+                              persistent_workers=True,
+                              random_crop=True,
+                              color_jitter=True,
+                              rotation=True,
+                              horizontal_flip=True):
     
     train_transform = transforms.Compose([
         transforms.RandomResizedCrop(
             image_size,
             scale=(0.7, 1.0),
             ratio=(0.75, 1.33)
-        ),
-        transforms.RandomHorizontalFlip(),
+        ) if random_crop else transforms.Resize((image_size, image_size)),
+        transforms.RandomHorizontalFlip() if horizontal_flip else None,
         transforms.ColorJitter(
             brightness=0.2,
             contrast=0.2,
             saturation=0.2,
             hue=0.05
-        ),
-        transforms.RandomRotation(5),
+        ) if color_jitter else None,
+        transforms.RandomRotation(5) if rotation else None,
         transforms.ToTensor(),
         transforms.Normalize(
             mean=[0.485, 0.456, 0.406],
             std=[0.229, 0.224, 0.225]
         ),
     ])
+
+    # Remove none transforms if there are any
+    train_transform.transforms = [t for t in train_transform.transforms if t is not None]
 
     val_transform = transforms.Compose([
         transforms.Resize((image_size, image_size)), #changes validation images to smaller sizes
