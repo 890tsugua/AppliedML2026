@@ -19,7 +19,7 @@ def make_dataloaders_from_dir(data_dir, batch_size=32, image_size=224, val_split
             image_size,
             scale=(0.7, 1.0),
             ratio=(0.75, 1.33)
-        ) if random_crop else transforms.Resize((image_size, image_size)),
+        ) if random_crop else None,#transforms.Resize((image_size, image_size)),
         transforms.RandomHorizontalFlip() if horizontal_flip else None,
         transforms.ColorJitter(
             brightness=0.2,
