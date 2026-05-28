@@ -50,8 +50,22 @@ def make_dataloaders_from_dir(data_dir, batch_size=32, image_size=224, val_split
     # important: validation should use val_transform, not augmentation
     val_dataset.dataset = datasets.ImageFolder(data_dir, transform=val_transform)
 
-    train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, num_workers=4, pin_memory=True, prefetch_factor=2)
-    val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False, num_workers=4, pin_memory=True, prefetch_factor=2)
+    train_loader = DataLoader(train_dataset, 
+                              batch_size=batch_size, 
+                              shuffle=True, 
+                              num_workers=8, 
+                              pin_memory=True, 
+                              prefetch_factor=4,
+                              persistent_workers=True)
+    
+    
+    val_loader = DataLoader(val_dataset, 
+                            batch_size=batch_size, 
+                            shuffle=False, 
+                            num_workers=8, 
+                            pin_memory=True, 
+                            prefetch_factor=4,
+                            persistent_workers=True)
 
     return train_loader, val_loader
 

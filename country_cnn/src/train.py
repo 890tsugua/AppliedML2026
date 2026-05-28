@@ -5,7 +5,7 @@ import torch
 from tqdm import tqdm
 from pathlib import Path
 
-def run_epoch(model, dataloader, optimizer, criterion, device, train=True):
+def run_epoch(model, dataloader, optimizer, criterion, device, scaler, train=True):
     """
     Run one epoch of training or validation. Returns training or validation loss for the epoch
     """
@@ -18,9 +18,6 @@ def run_epoch(model, dataloader, optimizer, criterion, device, train=True):
     running_loss = 0.0
     running_corrects = 0
     running_corrects_top5 = 0
-
-    if device.type == "cuda":
-        scaler = torch.cuda.amp.GradScaler() # For mixed precision training
 
     for batch_idx, (images, labels) in enumerate(tqdm(dataloader, desc=f"Description")):
         # Move to cuda or relevant device. 
@@ -88,13 +85,15 @@ def train(model, train_loader, val_loader, device, save_name, save_checkpoints, 
     if criterion == None:
         criterion = torch.nn.CrossEntropyLoss()
 
+    scaler = torch.cuda.amp.GradScaler() if device.type == "cuda" else None
+
     best_val_loss = float("inf")
     model_dir = Path("country_cnn/outputs/models")
     model_dir.mkdir(parents=True, exist_ok=True)
 
     for epoch in range(num_epochs):
-        train_loss, train_accuracy, train_accuracy_top5 = run_epoch(model, train_loader, optimizer, criterion, device, train=True)
-        val_loss, val_accuracy, val_accuracy_top5 = run_epoch(model, val_loader, optimizer, criterion, device, train=False)
+        train_loss, train_accuracy, train_accuracy_top5 = run_epoch(model, train_loader, optimizer, criterion, device, scaler, train=True)
+        val_loss, val_accuracy, val_accuracy_top5 = run_epoch(model, val_loader, optimizer, criterion, device, scaler, train=False)
         scheduler.step() # Step the learning rate scheduler
         
 
