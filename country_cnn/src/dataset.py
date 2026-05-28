@@ -4,7 +4,11 @@ import matplotlib.pyplot as plt
 import torch
 
 
-def make_dataloaders_from_dir(data_dir, batch_size=32, image_size=224, val_split=0.2):
+def make_dataloaders_from_dir(data_dir, batch_size=32, image_size=224, val_split=0.2,
+                              num_workers=8, 
+                              pin_memory=True, 
+                              prefetch_factor=4,
+                              persistent_workers=True):
     
     train_transform = transforms.Compose([
         transforms.RandomResizedCrop(
@@ -13,18 +17,14 @@ def make_dataloaders_from_dir(data_dir, batch_size=32, image_size=224, val_split
             ratio=(0.75, 1.33)
         ),
         transforms.RandomHorizontalFlip(),
-
         transforms.ColorJitter(
             brightness=0.2,
             contrast=0.2,
             saturation=0.2,
             hue=0.05
         ),
-
         transforms.RandomRotation(5),
-
         transforms.ToTensor(),
-
         transforms.Normalize(
             mean=[0.485, 0.456, 0.406],
             std=[0.229, 0.224, 0.225]
@@ -53,19 +53,19 @@ def make_dataloaders_from_dir(data_dir, batch_size=32, image_size=224, val_split
     train_loader = DataLoader(train_dataset, 
                               batch_size=batch_size, 
                               shuffle=True, 
-                              num_workers=8, 
-                              pin_memory=True, 
-                              prefetch_factor=4,
-                              persistent_workers=True)
+                              num_workers=num_workers, 
+                              pin_memory=pin_memory, 
+                              prefetch_factor=prefetch_factor,
+                              persistent_workers=persistent_workers)
     
     
     val_loader = DataLoader(val_dataset, 
                             batch_size=batch_size, 
                             shuffle=False, 
-                            num_workers=8, 
-                            pin_memory=True, 
-                            prefetch_factor=4,
-                            persistent_workers=True)
+                            num_workers=num_workers, 
+                            pin_memory=pin_memory, 
+                            prefetch_factor=prefetch_factor,
+                            persistent_workers=persistent_workers)
 
     return train_loader, val_loader
 
