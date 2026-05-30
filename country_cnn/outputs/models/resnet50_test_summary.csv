@@ -1,0 +1,2 @@
+model,test_top1,test_top5,checkpoint,classification_report,confusion_matrix,predictions
+resnet50,0.4868833124637604,0.778974175453186,/content/AppliedML2026/country_cnn/outputs/models/resnet50_model.pt,/content/AppliedML2026/country_cnn/outputs/models/resnet50_test_classification_report.csv,/content/AppliedML2026/country_cnn/outputs/models/resnet50_test_confusion_matrix.csv,/content/AppliedML2026/country_cnn/outputs/models/resnet50_test_predictions.csv
