@@ -3,7 +3,7 @@
 import torch
 from sklearn.metrics import classification_report, confusion_matrix
 
-
+ 
 def load_model(model, checkpoint_path, device):
     """
     Load saved model weights.
@@ -75,6 +75,13 @@ def evaluate_model(model, dataloader, device, class_names=None):
 
     cm = confusion_matrix(labels, preds)
 
+    report = classification_report(
+        labels,
+        preds,
+        target_names=class_names,
+        output_dict=True
+    )
+
     return {
         "top1": top1,
         "top5": top5,
@@ -82,4 +89,5 @@ def evaluate_model(model, dataloader, device, class_names=None):
         "labels": labels,
         "probs": probs,
         "confusion_matrix": cm,
+        "classification_report": report
     }
