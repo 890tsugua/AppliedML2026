@@ -59,7 +59,7 @@ def run_epoch(model, dataloader, optimizer, criterion, device, scaler, train=Tru
     return epoch_loss, epoch_acc, epoch_acc_top5
 
 
-def train(model, train_loader, val_loader, device, save_name, save_checkpoints, optimizer=None, criterion=None, num_epochs=100):
+def train(model, train_loader, val_loader, device, save_name, save_checkpoints, optimizer=None, criterion=None, num_epochs=100, patience=5):
     """
     Could also add learning rate scheduler, early stopping, saving optimizer.state_dict()
     """
@@ -88,6 +88,8 @@ def train(model, train_loader, val_loader, device, save_name, save_checkpoints, 
     scaler = torch.cuda.amp.GradScaler() if device.type == "cuda" else None
 
     best_val_loss = float("inf")
+    epochs_without_improvement = 0
+
     model_dir = Path("country_cnn/outputs/models")
     model_dir.mkdir(parents=True, exist_ok=True)
 
@@ -98,13 +100,17 @@ def train(model, train_loader, val_loader, device, save_name, save_checkpoints, 
         
 
         # Save model if validation loss improved
-        if save_checkpoints:
-            if val_loss < best_val_loss:
-                best_val_loss = val_loss
+        if val_loss < best_val_loss:
+            best_val_loss = val_loss
+            epochs_without_improvement = 0
+            if save_checkpoints:
                 best_model_path = model_dir / f"{save_name}.pt"
                 torch.save(
                     model.state_dict(), best_model_path)
                 print("Saved best model")
+        else:
+            epochs_without_improvement += 1
+    
 
         history["train_loss"].append(train_loss)
         history["val_loss"].append(val_loss)
@@ -119,5 +125,13 @@ def train(model, train_loader, val_loader, device, save_name, save_checkpoints, 
             f"Train loss: {train_loss:.4f}, acc: {train_accuracy:.4f}, top5: {train_accuracy_top5:.4f} | "
             f"Val loss: {val_loss:.4f}, acc: {val_accuracy:.4f}, top5: {val_accuracy_top5:.4f}"
         )
+
+        # Early stopping
+        if epochs_without_improvement >= patience:
+            print(
+                f"Early stopping after {epoch+1} epochs. "
+                f"Best validation loss: {best_val_loss:.4f}"
+            )
+            break
 
     return history
