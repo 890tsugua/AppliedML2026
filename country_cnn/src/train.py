@@ -5,7 +5,7 @@ import torch
 from tqdm import tqdm
 from pathlib import Path
 
-def run_epoch(model, dataloader, optimizer, criterion, device, train=True):
+def run_epoch(model, dataloader, optimizer, criterion, device, scaler, train=True):
     """
     Run one epoch of training or validation. Returns training or validation loss for the epoch
     """
@@ -19,13 +19,10 @@ def run_epoch(model, dataloader, optimizer, criterion, device, train=True):
     running_corrects = 0
     running_corrects_top5 = 0
 
-    if device.type == "cuda":
-        scaler = torch.cuda.amp.GradScaler() # For mixed precision training
-
     for batch_idx, (images, labels) in enumerate(tqdm(dataloader, desc=f"Description")):
         # Move to cuda or relevant device. 
-        images = images.to(device)
-        labels = labels.to(device)  
+        images = images.to(device, non_blocking=True)
+        labels = labels.to(device, non_blocking=True)
 
         if train:
             optimizer.zero_grad()   # Reset gradients. 
@@ -62,7 +59,7 @@ def run_epoch(model, dataloader, optimizer, criterion, device, train=True):
     return epoch_loss, epoch_acc, epoch_acc_top5
 
 
-def train(model, train_loader, val_loader, device, save_name, optimizer=None, criterion=None, num_epochs=100):
+def train(model, train_loader, val_loader, device, save_name, save_checkpoints, optimizer=None, criterion=None, num_epochs=100):
     """
     Could also add learning rate scheduler, early stopping, saving optimizer.state_dict()
     """
@@ -77,7 +74,7 @@ def train(model, train_loader, val_loader, device, save_name, optimizer=None, cr
     }
 
     if optimizer == None:
-        optimizer = torch.optim.Adam(model.parameters(), lr=1e-4)
+        optimizer = torch.optim.Adam(model.parameters(), lr=0.001916445324514403, weight_decay=9.256459432630416e-06) # From Optuna tuning
     
     scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
         optimizer,
@@ -88,23 +85,26 @@ def train(model, train_loader, val_loader, device, save_name, optimizer=None, cr
     if criterion == None:
         criterion = torch.nn.CrossEntropyLoss()
 
+    scaler = torch.cuda.amp.GradScaler() if device.type == "cuda" else None
+
     best_val_loss = float("inf")
-    model_dir = Path("../outputs/models")
+    model_dir = Path("country_cnn/outputs/models")
     model_dir.mkdir(parents=True, exist_ok=True)
 
     for epoch in range(num_epochs):
-        train_loss, train_accuracy, train_accuracy_top5 = run_epoch(model, train_loader, optimizer, criterion, device, train=True)
-        val_loss, val_accuracy, val_accuracy_top5 = run_epoch(model, val_loader, optimizer, criterion, device, train=False)
+        train_loss, train_accuracy, train_accuracy_top5 = run_epoch(model, train_loader, optimizer, criterion, device, scaler, train=True)
+        val_loss, val_accuracy, val_accuracy_top5 = run_epoch(model, val_loader, optimizer, criterion, device, scaler, train=False)
         scheduler.step() # Step the learning rate scheduler
         
 
         # Save model if validation loss improved
-        if val_loss < best_val_loss:
-            best_val_loss = val_loss
-            best_model_path = model_dir / f"{save_name}.pt"
-            torch.save(
-                model.state_dict(), best_model_path)
-            print("Saved best model")
+        if save_checkpoints:
+            if val_loss < best_val_loss:
+                best_val_loss = val_loss
+                best_model_path = model_dir / f"{save_name}.pt"
+                torch.save(
+                    model.state_dict(), best_model_path)
+                print("Saved best model")
 
         history["train_loss"].append(train_loss)
         history["val_loss"].append(val_loss)

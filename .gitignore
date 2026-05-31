@@ -36,11 +36,11 @@ ENV/
 *.pkl
 *.pth
 *.h5
-models/*.pth
-models/*.pkl
+#models/*.pth
+#models/*.pkl
 
 # Data (optional - if not version controlled)
 data/
 #*.csv
-outputs/plots/*
-outputs/models/*
+#outputs/plots/*
+#outputs/models/*
