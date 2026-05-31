@@ -9,17 +9,18 @@ def make_dataloaders_from_dir(data_dir, batch_size=32, image_size=224, val_split
                               pin_memory=True, 
                               prefetch_factor=4,
                               persistent_workers=True,
-                              random_crop=True,
-                              color_jitter=True,
-                              rotation=True,
-                              horizontal_flip=True):
+                              random_crop=False,
+                              color_jitter=False,
+                              rotation=False,
+                              horizontal_flip=False):
     
     train_transform = transforms.Compose([
-        transforms.RandomResizedCrop(
-            image_size,
-            scale=(0.7, 1.0),
-            ratio=(0.75, 1.33)
-        ) if random_crop else None,#transforms.Resize((image_size, image_size)),
+        transforms.randomCrop(image_size),
+        # transforms.RandomResizedCrop(
+        #     image_size,
+        #     scale=(0.7, 1.0),
+        #     ratio=(0.75, 1.33)
+        # ) if random_crop else None,#transforms.Resize((image_size, image_size)),
         transforms.RandomHorizontalFlip() if horizontal_flip else None,
         transforms.ColorJitter(
             brightness=0.2,
