@@ -35,7 +35,11 @@ def make_model(
 
     # replace classifier
     in_features = model.fc.in_features
-    model.fc = nn.Linear(in_features, num_classes)
+    #model.fc = nn.Linear(in_features, num_classes)
+    model.fc = nn.Sequential(
+        nn.Dropout(0.3),
+        nn.Linear(in_features, num_classes)
+    )
 
     # freeze everything first
     for param in model.parameters():
