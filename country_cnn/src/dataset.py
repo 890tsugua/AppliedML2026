@@ -15,7 +15,7 @@ def make_dataloaders_from_dir(data_dir, batch_size=32, image_size=224, val_split
                               horizontal_flip=False):
     
     train_transform = transforms.Compose([
-        transforms.randomCrop(image_size),
+        transforms.RandomCrop(image_size),
         # transforms.RandomResizedCrop(
         #     image_size,
         #     scale=(0.7, 1.0),
