@@ -14,7 +14,7 @@ def make_dataloaders_from_dir(data_dir, batch_size=32, image_size=224, val_split
                               color_jitter=False,
                               rotation=False,
                               horizontal_flip=False,
-                              at_least_one_per_class=False):
+                              at_least_one_per_class=True):
     
     if at_least_one_per_class and batch_size < 85:
         raise ValueError("batch_size must be at least 85 when at_least_one_per_class is True")
