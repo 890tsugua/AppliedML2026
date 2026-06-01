@@ -2,6 +2,7 @@ from torchvision import datasets, transforms
 from torch.utils.data import DataLoader, random_split
 import matplotlib.pyplot as plt
 import torch
+from sampler import AtLeastOnePerClassBatchSampler
 
 
 def make_dataloaders_from_dir(data_dir, batch_size=32, image_size=224, val_split=0.2,
@@ -12,8 +13,12 @@ def make_dataloaders_from_dir(data_dir, batch_size=32, image_size=224, val_split
                               random_crop=False,
                               color_jitter=False,
                               rotation=False,
-                              horizontal_flip=False):
+                              horizontal_flip=False,
+                              at_least_one_per_class=False):
     
+    if at_least_one_per_class and batch_size < 85:
+        raise ValueError("batch_size must be at least 85 when at_least_one_per_class is True")
+
     train_transform = transforms.Compose([
         transforms.RandomCrop(image_size),
         # transforms.RandomResizedCrop(
@@ -58,13 +63,21 @@ def make_dataloaders_from_dir(data_dir, batch_size=32, image_size=224, val_split
     # important: validation should use val_transform, not augmentation
     val_dataset.dataset = datasets.ImageFolder(data_dir, transform=val_transform)
 
+    if at_least_one_per_class:
+        batch_sampler = AtLeastOnePerClassBatchSampler(
+        labels=train_dataset.targets,
+        batch_size=batch_size
+        )
+
     train_loader = DataLoader(train_dataset, 
-                              batch_size=batch_size, 
-                              shuffle=True, 
+                              batch_size=None if at_least_one_per_class else batch_size, 
+                              shuffle=False if at_least_one_per_class else True, 
                               num_workers=num_workers, 
                               pin_memory=pin_memory, 
                               prefetch_factor=prefetch_factor,
-                              persistent_workers=persistent_workers)
+                              persistent_workers=persistent_workers,
+                              batch_sampler=batch_sampler if at_least_one_per_class else None
+                              )
     
     
     val_loader = DataLoader(val_dataset, 
