@@ -96,7 +96,9 @@ def train(model, train_loader, val_loader, device, save_name, save_checkpoints, 
         'UnitedKingdom'
     }
 
-    class_names = pd.read_csv("../country_to_idx.csv", header=None).iloc[:, 0].tolist()
+    # Liste af lande
+    class_names = ['Albania', 'Argentina', 'Australia', 'Austria', 'Bangladesh', 'Belgium', 'Bhutan', 'Bolivia', 'Botswana', 'Brazil', 'Bulgaria', 'Cambodia', 'Canada', 'Chile', 'Colombia', 'Croatia', 'Denmark', 'DominicanRepublic', 'Ecuador', 'Estonia', 'Eswatini', 'Finland', 'France', 'Germany', 'Ghana', 'Greece', 'Guatemala', 'Hungary', 'Iceland', 'India', 'Indonesia', 'Ireland', 'Israel', 'Italy', 'Japan', 'Jordan', 'Kazakhstan', 'Kenya', 'Kyrgyzstan', 'Laos', 'Latvia', 'Lebanon', 'Lesotho', 'Lithuania', 'Luxembourg', 'Madagascar', 'Malaysia', 'Malta', 'Mexico', 'Mongolia', 'Montenegro', 'Netherlands', 'NewZealand', 'Nigeria', 'NorthMacedonia', 'Norway', 'Oman', 'Panama', 'Peru', 'Philippines', 'Poland', 'Portugal', 'Qatar', 'Romania', 'Russia', 'Rwanda', 'Senegal', 'Serbia', 'Singapore', 'Slovakia', 'Slovenia', 'SouthAfrica', 'SouthKorea', 'Spain', 'Sweden', 'Switzerland', 'Thailand', 'Tunisia', 'Turkey', 'USA', 'Uganda', 'Ukraine', 'UnitedArabEmirates', 'UnitedKingdom', 'Uruguay']
+    #class_names = pd.read_csv("../country_to_idx.csv", header=None).iloc[:, 0].tolist()
 
     europe_weight = 1.5
     other_weight = 1.0
