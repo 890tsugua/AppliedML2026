@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 import torch
 from tqdm import tqdm
 from pathlib import Path
+import pandas as pd
 
 def run_epoch(model, dataloader, optimizer, criterion, device, scaler, train=True):
     """
@@ -59,9 +60,9 @@ def run_epoch(model, dataloader, optimizer, criterion, device, scaler, train=Tru
     return epoch_loss, epoch_acc, epoch_acc_top5
 
 
-def train(model, train_loader, val_loader, device, save_name, save_checkpoints, optimizer=None, criterion=None, num_epochs=100, patience=5):
+def train(model, train_loader, val_loader, device, save_name, save_checkpoints, class_weights=None, optimizer=None, criterion=None, num_epochs=100, patience=5):
     """
-    Could also add learning rate scheduler, early stopping, saving optimizer.state_dict()
+    
     """
     history = {
         "train_loss": [],
@@ -82,8 +83,36 @@ def train(model, train_loader, val_loader, device, save_name, save_checkpoints, 
         eta_min=1e-6
     )
 
+    if class_weights == None:
+        european_countries = {
+        'Albania', 'Austria', 'Belgium', 'Bulgaria', 'Croatia',
+        'Denmark', 'Estonia', 'Finland', 'France', 'Germany',
+        'Greece', 'Hungary', 'Iceland', 'Ireland', 'Italy',
+        'Latvia', 'Lithuania', 'Luxembourg', 'Malta',
+        'Montenegro', 'Netherlands', 'NorthMacedonia',
+        'Norway', 'Poland', 'Portugal', 'Romania',
+        'Russia', 'Serbia', 'Slovakia', 'Slovenia',
+        'Spain', 'Sweden', 'Switzerland', 'Ukraine',
+        'UnitedKingdom'
+    }
+
+    class_names = pd.read_csv("../country_to_idx.csv", header=None).iloc[:, 0].tolist()
+
+    europe_weight = 1.5
+    other_weight = 1.0
+
+    class_weights = torch.tensor(
+        [
+            europe_weight if country in european_countries
+            else other_weight
+            for country in class_names
+        ],
+        dtype=torch.float32,
+        device=device
+    )
+
     if criterion == None:
-        criterion = torch.nn.CrossEntropyLoss()
+        criterion = torch.nn.CrossEntropyLoss(weights=class_weights)
 
     scaler = torch.cuda.amp.GradScaler() if device.type == "cuda" else None
 
