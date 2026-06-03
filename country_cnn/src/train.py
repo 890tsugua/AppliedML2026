@@ -114,7 +114,7 @@ def train(model, train_loader, val_loader, device, save_name, save_checkpoints, 
     )
 
     if criterion == None:
-        criterion = torch.nn.CrossEntropyLoss(weights=class_weights)
+        criterion = torch.nn.CrossEntropyLoss(weight=class_weights)
 
     scaler = torch.cuda.amp.GradScaler() if device.type == "cuda" else None
 
