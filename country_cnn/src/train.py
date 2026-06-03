@@ -169,4 +169,4 @@ def train(model, train_loader, val_loader, device, save_name, save_checkpoints, 
             )
             break
 
-    #return history
+    return history
