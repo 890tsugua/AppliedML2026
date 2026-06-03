@@ -20,7 +20,7 @@ def run_epoch(model, dataloader, optimizer, criterion, device, scaler, train=Tru
     running_corrects = 0
     running_corrects_top5 = 0
 
-    for batch_idx, (images, labels) in enumerate(tqdm(dataloader, desc=f"Description")):
+    for batch_idx, (images, labels) in enumerate(tqdm(dataloader, desc=f"Running epoch :) ")):
         # Move to cuda or relevant device. 
         images = images.to(device, non_blocking=True)
         labels = labels.to(device, non_blocking=True)
@@ -157,6 +157,10 @@ def train(model, train_loader, val_loader, device, save_name, save_checkpoints, 
             f"Val loss: {val_loss:.4f}, acc: {val_accuracy:.4f}, top5: {val_accuracy_top5:.4f}"
         )
 
+        # Print history to a file after each epoch
+        history_path = model_dir / f"{save_name}_history.csv"
+        pd.DataFrame(history).to_csv(history_path, index=False)
+
         # Early stopping
         if epochs_without_improvement >= patience:
             print(
@@ -165,4 +169,4 @@ def train(model, train_loader, val_loader, device, save_name, save_checkpoints, 
             )
             break
 
-    return history
+    #return history
