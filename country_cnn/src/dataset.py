@@ -69,14 +69,22 @@ def make_dataloaders_from_dir(data_dir, batch_size=32, image_size=224, val_split
         batch_size=batch_size
         )
 
-    train_loader = DataLoader(train_dataset, 
-                              batch_size=None if at_least_one_per_class else batch_size, 
-                              shuffle=False if at_least_one_per_class else True, 
+    if at_least_one_per_class:
+        train_loader = DataLoader(train_dataset, 
                               num_workers=num_workers, 
                               pin_memory=pin_memory, 
                               prefetch_factor=prefetch_factor,
                               persistent_workers=persistent_workers,
-                              batch_sampler=batch_sampler if at_least_one_per_class else None
+                              batch_sampler=batch_sampler
+                              )
+    else:
+        train_loader = DataLoader(train_dataset, 
+                              batch_size=batch_size, 
+                              shuffle=True, 
+                              num_workers=num_workers, 
+                              pin_memory=pin_memory, 
+                              prefetch_factor=prefetch_factor,
+                              persistent_workers=persistent_workers,
                               )
     
     
@@ -87,6 +95,9 @@ def make_dataloaders_from_dir(data_dir, batch_size=32, image_size=224, val_split
                             pin_memory=pin_memory, 
                             prefetch_factor=prefetch_factor,
                             persistent_workers=persistent_workers)
+
+
+
 
     return train_loader, val_loader
 
