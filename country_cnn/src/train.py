@@ -79,7 +79,7 @@ def train(model, train_loader, val_loader, device, save_name, save_checkpoints, 
     
     scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
         optimizer,
-        T_max=num_epochs,
+        T_max=100,
         eta_min=1e-6
     )
 
