@@ -2,7 +2,7 @@ from torchvision import datasets, transforms
 from torch.utils.data import DataLoader, random_split
 import matplotlib.pyplot as plt
 import torch
-from sampler import AtLeastOnePerClassBatchSampler
+from src.sampler import AtLeastOnePerClassBatchSampler
 
 
 def make_dataloaders_from_dir(data_dir, batch_size=32, image_size=224, val_split=0.2,
@@ -65,7 +65,7 @@ def make_dataloaders_from_dir(data_dir, batch_size=32, image_size=224, val_split
 
     if at_least_one_per_class:
         batch_sampler = AtLeastOnePerClassBatchSampler(
-        labels=train_dataset.targets,
+        labels=[full_dataset.targets[i] for i in train_dataset.indices],
         batch_size=batch_size
         )
 
