@@ -75,7 +75,7 @@ def train(model, train_loader, val_loader, device, save_name, save_checkpoints, 
     }
 
     if optimizer == None:
-        optimizer = torch.optim.Adam(model.parameters(), lr=0.00087017, weight_decay=1e-05) # From Optuna tuning
+        optimizer = torch.optim.Adam(model.parameters(), lr=0.0018640205, weight_decay= 0.0001) # From Optuna tuning
     
     scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
         optimizer,
