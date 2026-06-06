@@ -75,11 +75,16 @@ def train(model, train_loader, val_loader, device, save_name, save_checkpoints, 
     }
 
     if optimizer == None:
-        optimizer = torch.optim.Adam(model.parameters(), lr=0.0018640205, weight_decay= 0.0001) # From Optuna tuning
+        #optimizer = torch.optim.Adam(model.parameters(), lr=0.0018640205, weight_decay= 0.0001) # From Optuna tuning
+        optimizer = torch.optim.Adam(
+            filter(lambda p: p.requires_grad, model.parameters()),
+            lr=0.00087,
+            weight_decay=1e-5
+        )
     
     scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
         optimizer,
-        T_max=25,
+        T_max=num_epochs,
         eta_min=1e-6
     )
 
