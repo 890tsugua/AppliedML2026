@@ -5,12 +5,14 @@ from pathlib import Path
 import pandas as pd
 
 def make_cluster_smoothing_matrix(
-    csv_path,
     class_names,
     device,
     correct_prob=0.9,
 ):
-    df = pd.read_csv(csv_path)
+    BASE_DIR = Path(__file__).resolve().parent
+    CSV_PATH = BASE_DIR.parent / "country_climate_geography_clusters_K15.csv"
+
+    df = pd.read_csv(CSV_PATH)
 
     country_to_cluster = dict(zip(df["country"], df["cluster"]))
     num_classes = len(class_names)
@@ -29,6 +31,7 @@ def make_cluster_smoothing_matrix(
 
         if len(same_cluster_indices) > 0:
             rest_prob = 1.0 - correct_prob
+
             for j in same_cluster_indices:
                 smoothing[i, j] = rest_prob / len(same_cluster_indices)
 
@@ -112,25 +115,7 @@ def run_epoch(model, dataloader, optimizer, criterion, device, scaler=None, trai
     return epoch_loss, epoch_acc, epoch_acc_top5
 
 
-def make_default_class_weights(device):
-    """
-    Creates class weights where European countries receive higher weight.
-    This keeps the same weighting idea as the original train.py.
-    """
-
-    european_countries = {
-        "Albania", "Austria", "Belgium", "Bulgaria", "Croatia",
-        "Denmark", "Estonia", "Finland", "France", "Germany",
-        "Greece", "Hungary", "Iceland", "Ireland", "Italy",
-        "Latvia", "Lithuania", "Luxembourg", "Malta",
-        "Montenegro", "Netherlands", "NorthMacedonia",
-        "Norway", "Poland", "Portugal", "Romania",
-        "Russia", "Serbia", "Slovakia", "Slovenia",
-        "Spain", "Sweden", "Switzerland", "Ukraine",
-        "UnitedKingdom"
-    }
-
-    class_names = [
+class_names = [
         "Albania", "Argentina", "Australia", "Austria", "Bangladesh",
         "Belgium", "Bhutan", "Bolivia", "Botswana", "Brazil",
         "Bulgaria", "Cambodia", "Canada", "Chile", "Colombia",
@@ -150,20 +135,6 @@ def make_default_class_weights(device):
         "Tunisia", "Turkey", "USA", "Uganda", "Ukraine",
         "UnitedArabEmirates", "UnitedKingdom", "Uruguay"
     ]
-
-    europe_weight = 1.5
-    other_weight = 1.0
-
-    class_weights = torch.tensor(
-        [
-            europe_weight if country in european_countries else other_weight
-            for country in class_names
-        ],
-        dtype=torch.float32,
-        device=device
-    )
-
-    return class_weights
 
 
 def train_with_two_checkpoints(
@@ -230,16 +201,12 @@ def train_with_two_checkpoints(
         eta_min=1e-6
     )
 
-    if class_weights is None:
-        class_weights = make_default_class_weights(device)
-
     if criterion is None:
-    criterion = make_cluster_smoothing_matrix(
-        csv_path="country_climate_geography_clusters_K15.csv",
-        class_names=class_names,
-        device=device,
-        correct_prob=0.9
-    )
+        criterion = make_cluster_smoothing_matrix(
+            class_names=class_names,
+            device=device,
+            correct_prob=0.9
+        )
 
     scaler = torch.cuda.amp.GradScaler() if device.type == "cuda" else None
 
