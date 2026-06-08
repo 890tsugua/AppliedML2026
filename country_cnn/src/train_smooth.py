@@ -4,19 +4,89 @@ from tqdm import tqdm
 from pathlib import Path
 import pandas as pd
 
+
+def get_cluster_csv_path(cluster_k):
+    """
+    Returns path to the cluster CSV file based on K.
+
+    Expected file names:
+        country_climate_geography_clusters_K15.csv
+        country_clusters_K30.csv
+    """
+
+    base_dir = Path(__file__).resolve().parent
+    project_dir = base_dir.parent
+
+    if cluster_k == 15:
+        return project_dir / "country_climate_geography_clusters_K15.csv"
+
+    if cluster_k == 30:
+        return project_dir / "country_clusters_K30.csv"
+
+    raise ValueError(
+        f"Unsupported cluster_k={cluster_k}. Use cluster_k=15 or cluster_k=30."
+    )
+
+
 def make_cluster_smoothing_matrix(
     class_names,
     device,
+    cluster_k=15,
     correct_prob=0.9,
+    csv_path=None,
 ):
-    BASE_DIR = Path(__file__).resolve().parent
-    CSV_PATH = BASE_DIR.parent / "country_climate_geography_clusters_K15.csv"
+    """
+    Creates a soft-label smoothing matrix based on country clusters.
 
-    df = pd.read_csv(CSV_PATH)
+    For each true country:
+        correct_prob goes to the true country
+        1 - correct_prob is distributed across countries in the same cluster
+
+    Args:
+        class_names: list of class/country names in the same order as the model output.
+        device: torch device.
+        cluster_k: 15 or 30.
+        correct_prob: probability assigned to the correct country.
+        csv_path: optional manual path to cluster CSV.
+
+    Returns:
+        smoothing matrix of shape [num_classes, num_classes].
+    """
+
+    if not (0.0 < correct_prob <= 1.0):
+        raise ValueError("correct_prob must be in the interval (0, 1].")
+
+    if csv_path is None:
+        csv_path = get_cluster_csv_path(cluster_k)
+
+    csv_path = Path(csv_path)
+
+    if not csv_path.exists():
+        raise FileNotFoundError(f"Cluster file not found: {csv_path}")
+
+    df = pd.read_csv(csv_path)
+
+    required_columns = {"country", "cluster"}
+    if not required_columns.issubset(df.columns):
+        raise ValueError(
+            f"Cluster CSV must contain columns {required_columns}. "
+            f"Found columns: {list(df.columns)}"
+        )
 
     country_to_cluster = dict(zip(df["country"], df["cluster"]))
-    num_classes = len(class_names)
 
+    missing_countries = [
+        country for country in class_names
+        if country not in country_to_cluster
+    ]
+
+    if missing_countries:
+        raise ValueError(
+            "These class_names are missing from the cluster CSV: "
+            f"{missing_countries}"
+        )
+
+    num_classes = len(class_names)
     smoothing = torch.zeros(num_classes, num_classes, device=device)
 
     for i, country in enumerate(class_names):
@@ -31,23 +101,40 @@ def make_cluster_smoothing_matrix(
 
         if len(same_cluster_indices) > 0:
             rest_prob = 1.0 - correct_prob
+            prob_per_country = rest_prob / len(same_cluster_indices)
 
             for j in same_cluster_indices:
-                smoothing[i, j] = rest_prob / len(same_cluster_indices)
+                smoothing[i, j] = prob_per_country
+        else:
+            # If a country is alone in its cluster, keep it as one-hot.
+            smoothing[i, i] = 1.0
 
     return smoothing
 
 
 def soft_cross_entropy(predictions, soft_targets):
+    """
+    Cross entropy for soft labels.
+    """
     log_probs = F.log_softmax(predictions, dim=1)
     return -(soft_targets * log_probs).sum(dim=1).mean()
 
-def run_epoch(model, dataloader, optimizer, criterion, device, scaler=None, train=True):
+
+def run_epoch(
+    model,
+    dataloader,
+    optimizer,
+    criterion,
+    device,
+    scaler=None,
+    train=True
+):
     """
     Run one training or validation epoch.
 
-    Returns:
-        epoch_loss, epoch_acc, epoch_acc_top5
+    criterion can be either:
+        - normal loss function, e.g. torch.nn.CrossEntropyLoss()
+        - smoothing matrix tensor of shape [num_classes, num_classes]
     """
 
     if train:
@@ -71,6 +158,7 @@ def run_epoch(model, dataloader, optimizer, criterion, device, scaler=None, trai
             if device.type == "cuda":
                 with torch.cuda.amp.autocast():
                     predictions = model(images)
+
                     if isinstance(criterion, torch.Tensor):
                         soft_targets = criterion[labels]
                         loss = soft_cross_entropy(predictions, soft_targets)
@@ -81,8 +169,10 @@ def run_epoch(model, dataloader, optimizer, criterion, device, scaler=None, trai
                     scaler.scale(loss).backward()
                     scaler.step(optimizer)
                     scaler.update()
+
             else:
                 predictions = model(images)
+
                 if isinstance(criterion, torch.Tensor):
                     soft_targets = criterion[labels]
                     loss = soft_cross_entropy(predictions, soft_targets)
@@ -115,28 +205,6 @@ def run_epoch(model, dataloader, optimizer, criterion, device, scaler=None, trai
     return epoch_loss, epoch_acc, epoch_acc_top5
 
 
-class_names = [
-        "Albania", "Argentina", "Australia", "Austria", "Bangladesh",
-        "Belgium", "Bhutan", "Bolivia", "Botswana", "Brazil",
-        "Bulgaria", "Cambodia", "Canada", "Chile", "Colombia",
-        "Croatia", "Denmark", "DominicanRepublic", "Ecuador",
-        "Estonia", "Eswatini", "Finland", "France", "Germany",
-        "Ghana", "Greece", "Guatemala", "Hungary", "Iceland",
-        "India", "Indonesia", "Ireland", "Israel", "Italy",
-        "Japan", "Jordan", "Kazakhstan", "Kenya", "Kyrgyzstan",
-        "Laos", "Latvia", "Lebanon", "Lesotho", "Lithuania",
-        "Luxembourg", "Madagascar", "Malaysia", "Malta", "Mexico",
-        "Mongolia", "Montenegro", "Netherlands", "NewZealand",
-        "Nigeria", "NorthMacedonia", "Norway", "Oman", "Panama",
-        "Peru", "Philippines", "Poland", "Portugal", "Qatar",
-        "Romania", "Russia", "Rwanda", "Senegal", "Serbia",
-        "Singapore", "Slovakia", "Slovenia", "SouthAfrica",
-        "SouthKorea", "Spain", "Sweden", "Switzerland", "Thailand",
-        "Tunisia", "Turkey", "USA", "Uganda", "Ukraine",
-        "UnitedArabEmirates", "UnitedKingdom", "Uruguay"
-    ]
-
-
 def train_with_two_checkpoints(
     model,
     train_loader,
@@ -144,34 +212,37 @@ def train_with_two_checkpoints(
     device,
     save_name,
     save_checkpoints=True,
-    class_weights=None,
     optimizer=None,
     criterion=None,
     num_epochs=50,
     patience=10,
     model_dir="country_cnn/outputs/models",
+    class_names=None,
+    use_cluster_smoothing=False,
+    cluster_k=15,
+    correct_prob=0.9,
+    cluster_csv_path=None,
 ):
     """
-    Improved training loop.
+    Training loop with two checkpoints.
 
-    Differences from train.py:
-    1. Saves two checkpoints:
-       - best validation loss model
-       - best validation accuracy model
+    Saves:
+        - best validation-loss checkpoint
+        - best validation-accuracy checkpoint
 
-    2. Early stopping only happens when BOTH:
-       - validation loss has not improved for `patience` epochs
-       - validation accuracy has not improved for `patience` epochs
+    Early stopping:
+        Stops only when BOTH validation loss and validation accuracy
+        have not improved for `patience` epochs.
 
-    3. CosineAnnealingLR uses T_max=num_epochs, so the scheduler matches
-       the planned number of training epochs.
+    Loss options:
+        1. criterion is provided:
+            uses the provided criterion.
 
-    4. History includes epoch number and is saved after every epoch.
+        2. use_cluster_smoothing=True:
+            creates cluster-based soft labels using cluster_k and correct_prob.
 
-    Returns:
-        history: dict
-        best_loss_path: Path
-        best_acc_path: Path
+        3. otherwise:
+            uses normal unweighted CrossEntropyLoss.
     """
 
     model_dir = Path(model_dir)
@@ -202,11 +273,28 @@ def train_with_two_checkpoints(
     )
 
     if criterion is None:
-        criterion = make_cluster_smoothing_matrix(
-            class_names=class_names,
-            device=device,
-            correct_prob=0.9
-        )
+        if use_cluster_smoothing:
+            if class_names is None:
+                raise ValueError(
+                    "class_names must be provided when use_cluster_smoothing=True."
+                )
+
+            criterion = make_cluster_smoothing_matrix(
+                class_names=class_names,
+                device=device,
+                cluster_k=cluster_k,
+                correct_prob=correct_prob,
+                csv_path=cluster_csv_path,
+            )
+
+            print(
+                f"Using cluster smoothing: K={cluster_k}, "
+                f"correct_prob={correct_prob}"
+            )
+
+        else:
+            criterion = torch.nn.CrossEntropyLoss()
+            print("Using normal CrossEntropyLoss")
 
     scaler = torch.cuda.amp.GradScaler() if device.type == "cuda" else None
 
